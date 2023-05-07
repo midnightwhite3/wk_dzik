@@ -14,11 +14,9 @@ options = Options()
 driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()), \
                            options=options)
 
-def main_page(https='https://wkdzik.pl'):
-    """Go to to main page. Since program is designed to check codes
-    for a specific page, it goes to wkdzik.pl by default.
-    """
-    driver.get(https)
+def main_page():
+    """Go to the main page (wkdzik.pl)."""
+    driver.get('https://wkdzik.pl')
 
 
 def accept_cookies():
@@ -29,8 +27,10 @@ def accept_cookies():
 
 def login(mail=settings.CREDENTIALS['EMAIL'], \
           password=settings.CREDENTIALS['PASSWORD'], \
-          sleep_for=1):
-    """Login to your account. Credentials are set in settings.py."""
+          sleep_for=settings.SLEEP_FOR):
+    """Login to your account. Credentials are set in settings.py.
+    sleep_for - change for how many seconds driver stops action.
+    """
     driver.find_element(By.CSS_SELECTOR, 'a.login').click()    # login
     driver.find_element(By.NAME, 'mail').send_keys(mail)
     driver.find_element(By.NAME, 'pass').send_keys(password)
@@ -43,25 +43,36 @@ def go_to_chart():
     """Finds the chart element and opens it."""
     chart = driver.find_element(By.CLASS_NAME, 'count')
     chart.click()
-    sleep(2)
+    sleep(settings.SLEEP_FOR)
 
 
-def get_codes(txt: str):
+def read_codes(codes_path: str) -> list:
     """Get current codes from txt file as a list, strip code str from new lines"""
-    codes = [line.rstrip() for line in open(txt, 'r')]
+    # codes = [line.rstrip() for line in open(codes_path, 'r')] # is it closing the file?
+    with open(codes_path, 'r') as f:
+        codes = [line.rstrip() for line in f]
     return codes
 
 
-# major refactor incoming!!
-def try_codes():
-    codes = get_codes(settings.CODES_TXT)
+def enter_code(code, find_by=(By.NAME, 'Wpisz kod rabatowy')):
+    driver.find_element(find_by).send_keys(code)
+    sleep(settings.SLEEP_FOR)
+
+
+def activate_code(find_by=(By.CLASS_NAME, 'el-input-group__append')):
+    driver.find_element(find_by).click()
+    sleep(settings.SLEEP_FOR)
+
+
+# find driver in a different function to prevent ducktyping
+def try_codes(print_info=True, save_to_file=True):
+    codes = read_codes(settings.CODES_TXT_PATH)
     coupon15 = []   # list for 15%
     coupon20 = []   # list for 20%
     for code in codes:
         # try every code
-        driver.find_element(By.NAME, 'Wpisz kod rabatowy').send_keys(code)
-        driver.find_element(By.CLASS_NAME, 'el-input-group__append').click()
-        sleep(3)
+        enter_code()
+        activate_code()
         # if code gives less than 15%, delete it and continue
         if ('Rabat 10%' or 'Rabat 5%') in driver.page_source:
             driver.find_element(By.CLASS_NAME, 'el-icon-delete').click()
@@ -87,7 +98,7 @@ def try_codes():
 
 # driver.find_element(By.ID, 'salesmanagoCloseButton').click()
 
-main_page()
-accept_cookies()
-login()
-go_to_chart()
+# main_page()
+# accept_cookies()
+# login()
+
