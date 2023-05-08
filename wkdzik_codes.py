@@ -43,7 +43,8 @@ def go_to_chart():
     """Finds the chart element and opens it."""
     chart = driver.find_element(By.CLASS_NAME, 'count')
     chart.click()
-    sleep(settings.SLEEP_FOR)
+    sleep(2)
+
 
 
 def read_codes(codes_path: str) -> list:
@@ -64,31 +65,51 @@ def activate_code(find_by=(By.CLASS_NAME, 'el-input-group__append')):
     sleep(settings.SLEEP_FOR)
 
 
-# find driver in a different function to prevent ducktyping
-def try_codes(print_info=True, save_to_file=True):
-    codes = read_codes(settings.CODES_TXT_PATH)
-    coupon15 = []   # list for 15%
-    coupon20 = []   # list for 20%
+def remove_code(find_by=(By.CLASS_NAME, 'el-icon-delete')):
+    driver.find_element(find_by).click()
+    sleep(settings.SLEEP_FOR)
+
+
+def empty_chart() -> bool:
+    f = driver.find_element(By.CLASS_NAME, "alert-info").text
+    if f.lower() == "twój koszyk jest pusty.":
+        return True
+    return False
+
+
+def clothes():
+    driver.find_element(By.ID, 'headlink24').click()
+
+
+def pick_item():
+    items = driver.find_elements(By.CLASS_NAME, 'products')
+    items[0].click()
+
+
+def add_to_chart():
+    driver.find_element(By.LINK_TEXT.lower(), 'do koszyka').click()
+
+
+# zmienic rabat % str na int zeby uzytkownik mogl wybrac od jakiego progu rabaty chcce zapisywac?
+def try_codes(print_info=True, save_to_file=False):
+    codes = read_codes(settings.CODES_PATH_ALL)
+    coupon15 = []
+    coupon20 = []
     for code in codes:
-        # try every code
         enter_code()
         activate_code()
-        # if code gives less than 15%, delete it and continue
-        if ('Rabat 10%' or 'Rabat 5%') in driver.page_source:
-            driver.find_element(By.CLASS_NAME, 'el-icon-delete').click()
-            sleep(1)
-        # add 15% code to a list, delete and continue
-        elif 'Rabat 15%' in driver.page_source:
-            print(f'Znaleziono kod o wartości 15%! {code}')
+        if 'Rabat 15%' in driver.page_source:
+            if print_info == True:
+                print(f'Znaleziono kod o wartości 15%! {code}')
             coupon15.append(code)
-            driver.find_element(By.CLASS_NAME, 'el-icon-delete').click()
-            sleep(1)
-        # add 20%% code to a list, delete and continue
+            remove_code()
         elif 'Rabat 20%' in driver.page_source:
-            print(f'Znaleziono kod o wartości 20%! {code}')
+            if print_info == True:
+                print(f'Znaleziono kod o wartości 20%! {code}')
             coupon20.append(code)
-            driver.find_element(By.CLASS_NAME, 'el-icon-delete').click()
-            sleep(1)
+            remove_code()
+        else:
+            remove_code()
     if coupon15:
         print(f'Znaleziono {len(coupon15)} kuponów o wartości 15%.')
         print(coupon15)
@@ -98,7 +119,14 @@ def try_codes(print_info=True, save_to_file=True):
 
 # driver.find_element(By.ID, 'salesmanagoCloseButton').click()
 
-# main_page()
-# accept_cookies()
-# login()
+#tests
+main_page()
+accept_cookies()
+login()
+go_to_chart()
+if empty_chart():
+    clothes()
+    pick_item()
+
+# try_codes()
 
