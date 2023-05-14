@@ -1,4 +1,5 @@
 settings.py
 /boar
 geckodriver.log
-/__pychache__
+/__pycache__
+__pycache__
