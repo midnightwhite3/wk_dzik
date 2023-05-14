@@ -1,4 +1,6 @@
 from selenium import webdriver
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.service import Service
 from webdriver_manager.firefox import GeckoDriverManager
@@ -8,6 +10,9 @@ from pyautogui import press
 from time import sleep
 
 import settings
+
+
+# TODO: implement webdriver wait to all funcs (generic implementation), with timeout included
 
 # set up the driver
 options = Options()
@@ -86,7 +91,7 @@ def empty_chart() -> bool:
     return False
 
 
-def category(id='headlink25'):
+def pick_category(id='headlink25'):
     """Picks one of the shop's categories. Accesories by default,
     since they dont have sizes or wariants to pick.
     
@@ -98,10 +103,14 @@ def category(id='headlink25'):
 def pick_item():
     """Picks an item from previously selected category."""
     items = driver.find_elements(By.CLASS_NAME, 'products')
+    sleep(1)
     items[0].click()
 
 
 def close_modal():
+    """Closes order confirmation pop up (modal)."""
+
+    sleep(settings.SLEEP_FOR)
     driver.find_element(By.CLASS_NAME, 'modal-close').click()
 
 
@@ -117,14 +126,24 @@ def proceed_to_chart():
     pass
 
 
+def try_code(code):
+    pass
+
+
+def show_code_input():
+    element = WebDriverWait(driver, 2).until(ec.element_to_be_clickable((By.CLASS_NAME, 'desc')))
+    element.click()
+
+
 # zmienic rabat % str na int zeby uzytkownik mogl wybrac od jakiego progu rabaty chcce zapisywac?
-def try_codes(print_info=True, save_to_file=False):
+def try_codes(discount=15, print_info=True, save_to_file=False):
     codes = read_codes(settings.CODES_PATH_ALL)
     coupon15 = []
     coupon20 = []
     for code in codes:
-        enter_code()
+        enter_code(code)
         activate_code()
+        # if f'Rabat {str(discount)}%' in driver.page_source:
         if 'Rabat 15%' in driver.page_source:
             if print_info == True:
                 print(f'Znaleziono kod o wartości 15%! {code}')
@@ -153,9 +172,13 @@ accept_cookies()
 login()
 go_to_chart()
 if empty_chart():
-    category()
+    pick_category()
     pick_item()
     add_to_chart()
+    close_modal()
+go_to_chart()
+show_code_input()
+try_codes()
 
 # try_codes()
 
