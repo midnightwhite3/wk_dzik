@@ -1,24 +1,30 @@
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as ec
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.service import Service
 from webdriver_manager.firefox import GeckoDriverManager
 from selenium.webdriver.firefox.options import Options
 import selenium.common.exceptions as exc
+
 from pyautogui import press
 from time import sleep
+import sys
 
 import settings
 
 
 # TODO: implement webdriver wait to all funcs (generic implementation), with timeout included
+# TODO: implement custom wait decorator suitable for all fucntions /
+# TRY: for x times use a function and wait for y seconds (x*y=timeout: seconds)
 
 # set up the driver
 options = Options()
 # options.headless = True
 driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()), \
                            options=options)
+
+wait = WebDriverWait(driver, 10)
 
 def main_page():
     """Go to the main page (wkdzik.pl)."""
@@ -102,14 +108,21 @@ def pick_category(id='headlink25'):
 
 def pick_item():
     """Picks an item from previously selected category."""
-    items = driver.find_elements(By.CLASS_NAME, 'products')
-    sleep(1)
-    items[0].click()
+    for _ in range(50):
+        try:
+            items = driver.find_elements(By.CLASS_NAME, 'products')
+            items[0].click()
+            sleep(0.2)
+        except:
+            print('exception occured')
+            continue
+        else:
+            print('success')
+            break
 
 
 def close_modal():
     """Closes order confirmation pop up (modal)."""
-
     sleep(settings.SLEEP_FOR)
     driver.find_element(By.CLASS_NAME, 'modal-close').click()
 
@@ -126,13 +139,32 @@ def proceed_to_chart():
     pass
 
 
-def try_code(code):
-    pass
-
-
 def show_code_input():
-    element = WebDriverWait(driver, 2).until(ec.element_to_be_clickable((By.CLASS_NAME, 'desc')))
+    element = driver.find_element(By.CLASS_NAME, "checkbox-wrap")
+    wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "checkbox-wrap")))
     element.click()
+    # for i in range(51):
+    #     if i == 51: sys.exit("Timeout. Exiting.")
+    #     try:
+    #         element = driver.find_element(By.ID, "promocodeshow")
+    #         element.click()
+    #         sleep(0.2)
+    #         print('try')
+    #     except:
+    #         print('fail')
+    #         continue
+    #     else:
+    #         print('suck')
+    #         break
+
+
+def try_code(code: str):
+    input = driver.find_element(By.NAME, "promocode")
+    wait.until(EC.visibility_of_element_located((By.NAME, "promocode")))
+    input.send_keys(str(code))
+    confirm = driver.find_element(By.XPATH, '//*[@id="cart-options"]/div[3]/div[1]/div/span[4]/button')
+    confirm.click()
+
 
 
 # zmienic rabat % str na int zeby uzytkownik mogl wybrac od jakiego progu rabaty chcce zapisywac?
@@ -178,7 +210,7 @@ if empty_chart():
     close_modal()
 go_to_chart()
 show_code_input()
-try_codes()
-
+try_code('435dfg')
 # try_codes()
 
+# try_codes()
