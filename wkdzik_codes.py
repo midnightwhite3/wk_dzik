@@ -15,8 +15,8 @@ import settings
 
 
 # TODO: implement webdriver wait to all funcs (generic implementation), with timeout included
-# TODO: implement custom wait decorator suitable for all fucntions /
-# TRY: for x times use a function and wait for y seconds (x*y=timeout: seconds)
+# TODO: if the price ios too low, chart layout is different /
+# check for the price in the chart to be high enough, add more items/more valuable item
 
 # set up the driver
 options = Options()
@@ -26,17 +26,41 @@ driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()), \
 
 wait = WebDriverWait(driver, 10)
 
+
+def timeout(timeout=settings.TIMEOUT):
+    def decorator(func):
+        def inner(*args, **kwargs):
+            for i in range(51):
+                if i == 51: sys.exit("Timeout. Exiting.")
+                try:
+                    func(*args, **kwargs)
+                    print('try')
+                except Exception as error:
+                    print('fail')
+                    sleep(timeout)
+                    print(error)
+                    continue
+                else:
+                    print('success')
+                    break
+        return inner
+    return decorator
+
+
+@timeout()
 def main_page():
     """Go to the main page (wkdzik.pl)."""
     driver.get('https://wkdzik.pl')
 
 
+@timeout()
 def accept_cookies():
     """Cookies pop up when main page loads, blocking all other actions. Accept it."""
     agree = driver.find_element(By.CSS_SELECTOR, 'button.btn-red:nth-child(1)')
     agree.click()
 
 
+@timeout()
 def login(mail=settings.CREDENTIALS['EMAIL'], \
           password=settings.CREDENTIALS['PASSWORD'], \
           sleep_for=settings.SLEEP_FOR):
@@ -52,12 +76,14 @@ def login(mail=settings.CREDENTIALS['EMAIL'], \
     sleep(sleep_for)
 
 
+@timeout()
 def go_to_chart():
     """Finds the chart element and clicks on it."""
     driver.find_element(By.CLASS_NAME, 'count').click()
     sleep(settings.SLEEP_FOR)
 
 
+@timeout()
 def read_codes(codes_path=settings.CODES_PATH_ALL) -> list:
     """Opens codes_path.txt file and returns a complete list of discount codes.
     
@@ -69,18 +95,21 @@ def read_codes(codes_path=settings.CODES_PATH_ALL) -> list:
     return codes
 
 
+@timeout()
 def enter_code(code, find_by=(By.NAME, 'Wpisz kod rabatowy')):
     """Looks for discount code fiels and puts the code in."""
     driver.find_element(find_by).send_keys(code)
     sleep(settings.SLEEP_FOR)
 
 
+@timeout()
 def activate_code(find_by=(By.CLASS_NAME, 'el-input-group__append')):
     """Activates sent discount code. Clicks on activate button."""
     driver.find_element(find_by).click()
     sleep(settings.SLEEP_FOR)
 
 
+@timeout()
 def remove_code(find_by=(By.CLASS_NAME, 'el-icon-delete')):
     """Removes previously sent discount code, making room to try another.
     Clicks on remove button.
@@ -89,6 +118,7 @@ def remove_code(find_by=(By.CLASS_NAME, 'el-icon-delete')):
     sleep(settings.SLEEP_FOR)
 
 
+@timeout()
 def empty_chart() -> bool:
     """Boolean return wheter chart has an item or not."""
     f = driver.find_element(By.CLASS_NAME, "alert-info").text
@@ -97,6 +127,7 @@ def empty_chart() -> bool:
     return False
 
 
+@timeout()
 def pick_category(id='headlink25'):
     """Picks one of the shop's categories. Accesories by default,
     since they dont have sizes or wariants to pick.
@@ -106,6 +137,7 @@ def pick_category(id='headlink25'):
     driver.find_element(By.ID, id).click()
 
 
+@timeout()
 def pick_item():
     """Picks an item from previously selected category."""
     for _ in range(50):
@@ -121,12 +153,14 @@ def pick_item():
             break
 
 
+@timeout()
 def close_modal():
     """Closes order confirmation pop up (modal)."""
     sleep(settings.SLEEP_FOR)
     driver.find_element(By.CLASS_NAME, 'modal-close').click()
 
 
+@timeout()
 def add_to_chart():
     """Adds item to chart."""
     try:
@@ -135,29 +169,19 @@ def add_to_chart():
         driver.find_element(By.CLASS_NAME, 'addtobasket').click()
 
 
+@timeout()
 def proceed_to_chart():
     pass
 
 
+@timeout()
 def show_code_input():
     element = driver.find_element(By.CLASS_NAME, "checkbox-wrap")
     wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "checkbox-wrap")))
     element.click()
-    # for i in range(51):
-    #     if i == 51: sys.exit("Timeout. Exiting.")
-    #     try:
-    #         element = driver.find_element(By.ID, "promocodeshow")
-    #         element.click()
-    #         sleep(0.2)
-    #         print('try')
-    #     except:
-    #         print('fail')
-    #         continue
-    #     else:
-    #         print('suck')
-    #         break
 
 
+@timeout()
 def try_code(code: str):
     input = driver.find_element(By.NAME, "promocode")
     wait.until(EC.visibility_of_element_located((By.NAME, "promocode")))
