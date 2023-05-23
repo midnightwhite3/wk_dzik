@@ -34,20 +34,16 @@ def timeout(timeout=settings.TIMEOUT):
                 if i == 51: sys.exit("Timeout. Exiting.")
                 try:
                     func(*args, **kwargs)
-                    print('try')
                 except Exception as error:
-                    print('fail')
                     sleep(timeout)
                     print(error)
                     continue
                 else:
-                    print('success')
                     break
         return inner
     return decorator
 
 
-@timeout()
 def main_page():
     """Go to the main page (wkdzik.pl)."""
     driver.get('https://wkdzik.pl')
@@ -71,16 +67,13 @@ def login(mail=settings.CREDENTIALS['EMAIL'], \
     driver.find_element(By.CSS_SELECTOR, 'a.login').click()    # login
     driver.find_element(By.NAME, 'mail').send_keys(mail)
     driver.find_element(By.NAME, 'pass').send_keys(password)
-    sleep(sleep_for)
     press('enter')
-    sleep(sleep_for)
 
 
-@timeout()
 def go_to_chart():
-    """Finds the chart element and clicks on it."""
-    driver.find_element(By.CLASS_NAME, 'count').click()
-    sleep(settings.SLEEP_FOR)
+    """Goes to the basket page URL."""
+    driver.get("https://wkdzik.pl/basket")
+    # driver.find_element(By.CLASS_NAME, 'count').click()
 
 
 @timeout()
@@ -98,15 +91,13 @@ def read_codes(codes_path=settings.CODES_PATH_ALL) -> list:
 @timeout()
 def enter_code(code, find_by=(By.NAME, 'Wpisz kod rabatowy')):
     """Looks for discount code fiels and puts the code in."""
-    driver.find_element(find_by).send_keys(code)
-    sleep(settings.SLEEP_FOR)
+    driver.find_element(By.NAME, "Wpisz kod rabatowy").send_keys(code)
 
 
 @timeout()
 def activate_code(find_by=(By.CLASS_NAME, 'el-input-group__append')):
     """Activates sent discount code. Clicks on activate button."""
-    driver.find_element(find_by).click()
-    sleep(settings.SLEEP_FOR)
+    driver.find_element(By.CLASS_NAME, "el-input-group__append").click()
 
 
 @timeout()
@@ -115,16 +106,17 @@ def remove_code(find_by=(By.CLASS_NAME, 'el-icon-delete')):
     Clicks on remove button.
     """
     driver.find_element(find_by).click()
-    sleep(settings.SLEEP_FOR)
+    
 
-
-@timeout()
 def empty_chart() -> bool:
     """Boolean return wheter chart has an item or not."""
     f = driver.find_element(By.CLASS_NAME, "alert-info").text
     if f.lower() == "twój koszyk jest pusty.":
+        print('pusty')
         return True
-    return False
+    else:
+        print("nie pusty")
+        return False
 
 
 @timeout()
@@ -175,19 +167,32 @@ def proceed_to_chart():
 
 
 @timeout()
+def is_code_input() -> bool:
+    if "Aktywuj" in driver.page_source:
+        return True
+    return False
+
+
+@timeout()
+def code_input(code: str):
+    element = driver.find_element(By.NAME, "Wpisz kod rabatowy")
+    element.send_keys(code)
+
+
+@timeout()
 def show_code_input():
     element = driver.find_element(By.CLASS_NAME, "checkbox-wrap")
     wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "checkbox-wrap")))
     element.click()
 
 
-@timeout()
-def try_code(code: str):
-    input = driver.find_element(By.NAME, "promocode")
-    wait.until(EC.visibility_of_element_located((By.NAME, "promocode")))
-    input.send_keys(str(code))
-    confirm = driver.find_element(By.XPATH, '//*[@id="cart-options"]/div[3]/div[1]/div/span[4]/button')
-    confirm.click()
+# @timeout()
+# def try_code(code: str):
+#     input = driver.find_element(By.NAME, "promocode")
+#     wait.until(EC.visibility_of_element_located((By.NAME, "promocode")))
+#     input.send_keys(str(code))
+#     confirm = driver.find_element(By.XPATH, '//*[@id="cart-options"]/div[3]/div[1]/div/span[4]/button')
+#     confirm.click()
 
 
 
@@ -222,6 +227,7 @@ def try_codes(discount=15, print_info=True, save_to_file=False):
 
 # driver.find_element(By.ID, 'salesmanagoCloseButton').click()
 
+
 #tests
 main_page()
 accept_cookies()
@@ -233,8 +239,9 @@ if empty_chart():
     add_to_chart()
     close_modal()
 go_to_chart()
-show_code_input()
-try_code('435dfg')
+enter_code("435dfg")
+activate_code()
+# remove_code()
 # try_codes()
 
 # try_codes()
