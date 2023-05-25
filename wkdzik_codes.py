@@ -1,4 +1,5 @@
 from selenium import webdriver
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -24,6 +25,7 @@ options = Options()
 driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()), \
                            options=options)
 
+action = ActionChains(driver)
 wait = WebDriverWait(driver, 10)
 
 
@@ -89,33 +91,35 @@ def read_codes(codes_path=settings.CODES_PATH_ALL) -> list:
 
 
 @timeout()
-def enter_code(code, find_by=(By.NAME, 'Wpisz kod rabatowy')):
-    """Looks for discount code fiels and puts the code in."""
-    driver.find_element(By.NAME, "Wpisz kod rabatowy").send_keys(code)
+def enter_code(code):
+    """Looks for discount code field and puts the code in."""
+    # wait.until(EC.presence_of_element_located((By.NAME, "Wpisz kod rabatowy")))
+    input = driver.find_element(By.NAME, "Wpisz kod rabatowy")
+    driver.find_element(By.CLASS_NAME, 'el-input-group__append').click() # neccesary to be able to send keys
+    input.send_keys(code)
 
 
 @timeout()
-def activate_code(find_by=(By.CLASS_NAME, 'el-input-group__append')):
+def activate_code():
     """Activates sent discount code. Clicks on activate button."""
     driver.find_element(By.CLASS_NAME, "el-input-group__append").click()
 
 
 @timeout()
-def remove_code(find_by=(By.CLASS_NAME, 'el-icon-delete')):
-    """Removes previously sent discount code, making room to try another.
+def remove_code(find_by=((By.CLASS_NAME, 'el-icon-delete'))):
+    """ *** code removes itself after activation try.
+    Removes previously sent discount code, making room to try another.
     Clicks on remove button.
     """
     driver.find_element(find_by).click()
-    
+
 
 def empty_chart() -> bool:
     """Boolean return wheter chart has an item or not."""
     f = driver.find_element(By.CLASS_NAME, "alert-info").text
     if f.lower() == "twój koszyk jest pusty.":
-        print('pusty')
         return True
     else:
-        print("nie pusty")
         return False
 
 
@@ -129,6 +133,7 @@ def pick_category(id='headlink25'):
     driver.find_element(By.ID, id).click()
 
 
+# TODO: *** refactor, timeout does the job.
 @timeout()
 def pick_item():
     """Picks an item from previously selected category."""
@@ -148,7 +153,6 @@ def pick_item():
 @timeout()
 def close_modal():
     """Closes order confirmation pop up (modal)."""
-    sleep(settings.SLEEP_FOR)
     driver.find_element(By.CLASS_NAME, 'modal-close').click()
 
 
@@ -234,6 +238,7 @@ accept_cookies()
 login()
 go_to_chart()
 if empty_chart():
+
     pick_category()
     pick_item()
     add_to_chart()
