@@ -29,16 +29,23 @@ action = ActionChains(driver)
 wait = WebDriverWait(driver, 10)
 
 
-def timeout(timeout=settings.TIMEOUT):
+def timeout(s=settings.TIMEOUT_s, n=settings.TIMEOUT_n):
+    """Decorator calls target function TIMEOUT_n-1 times then exits the program due
+    to timeout limit. Timeout limit = (n-1)*s.
+
+    PARAMETERS:
+    s = seconds to sleep between iterations.
+    n = number of iterations.
+    """
     def decorator(func):
         def inner(*args, **kwargs):
-            for i in range(51):
-                if i == 51: sys.exit("Timeout. Exiting.")
+            for i in range(n):
+                if i == n: sys.exit("Timeout. Exiting.")
                 try:
                     func(*args, **kwargs)
                 except Exception as error:
-                    sleep(timeout)
-                    print(error)
+                    sleep(s)
+                    # print(error)
                     continue
                 else:
                     break
@@ -60,12 +67,8 @@ def accept_cookies():
 
 @timeout()
 def login(mail=settings.CREDENTIALS['EMAIL'], \
-          password=settings.CREDENTIALS['PASSWORD'], \
-          sleep_for=settings.SLEEP_FOR):
-    """Login to your account. Credentials are set in settings.py.
-    
-    sleep_for - change for how many seconds driver stops action.
-    """
+          password=settings.CREDENTIALS['PASSWORD']):
+    """Login to your account. Credentials are set in settings.py."""
     driver.find_element(By.CSS_SELECTOR, 'a.login').click()    # login
     driver.find_element(By.NAME, 'mail').send_keys(mail)
     driver.find_element(By.NAME, 'pass').send_keys(password)
@@ -78,7 +81,6 @@ def go_to_chart():
     # driver.find_element(By.CLASS_NAME, 'count').click()
 
 
-@timeout()
 def read_codes(codes_path=settings.CODES_PATH_ALL) -> list:
     """Opens codes_path.txt file and returns a complete list of discount codes.
     
@@ -133,21 +135,11 @@ def pick_category(id='headlink25'):
     driver.find_element(By.ID, id).click()
 
 
-# TODO: *** refactor, timeout does the job.
 @timeout()
 def pick_item():
     """Picks an item from previously selected category."""
-    for _ in range(50):
-        try:
-            items = driver.find_elements(By.CLASS_NAME, 'products')
-            items[0].click()
-            sleep(0.2)
-        except:
-            print('exception occured')
-            continue
-        else:
-            print('success')
-            break
+    items = driver.find_elements(By.CLASS_NAME, 'products')
+    items[0].click()
 
 
 @timeout()
@@ -199,6 +191,10 @@ def show_code_input():
 #     confirm.click()
 
 
+def try_code(code):
+    enter_code(code)
+    activate_code()
+
 
 # zmienic rabat % str na int zeby uzytkownik mogl wybrac od jakiego progu rabaty chcce zapisywac?
 def try_codes(discount=15, print_info=True, save_to_file=False):
@@ -206,21 +202,16 @@ def try_codes(discount=15, print_info=True, save_to_file=False):
     coupon15 = []
     coupon20 = []
     for code in codes:
-        enter_code(code)
-        activate_code()
+        try_code(code)
         # if f'Rabat {str(discount)}%' in driver.page_source:
         if 'Rabat 15%' in driver.page_source:
-            if print_info == True:
+            if print_info:
                 print(f'Znaleziono kod o wartości 15%! {code}')
             coupon15.append(code)
-            remove_code()
         elif 'Rabat 20%' in driver.page_source:
-            if print_info == True:
+            if print_info:
                 print(f'Znaleziono kod o wartości 20%! {code}')
             coupon20.append(code)
-            remove_code()
-        else:
-            remove_code()
     if coupon15:
 
         print(f'Znaleziono {len(coupon15)} kuponów o wartości 15%.')
@@ -238,15 +229,15 @@ accept_cookies()
 login()
 go_to_chart()
 if empty_chart():
-
     pick_category()
     pick_item()
     add_to_chart()
     close_modal()
 go_to_chart()
-enter_code("435dfg")
-activate_code()
+# enter_code("435dfg")
+# activate_code()
 # remove_code()
-# try_codes()
+try_codes()
 
 # try_codes()
+
