@@ -45,7 +45,7 @@ def timeout(s=settings.TIMEOUT_s, n=settings.TIMEOUT_n):
                     func(*args, **kwargs)
                 except Exception as error:
                     sleep(s)
-                    # print(error)
+                    print(error)
                     continue
                 else:
                     break
@@ -106,14 +106,14 @@ def activate_code():
     """Activates sent discount code. Clicks on activate button."""
     driver.find_element(By.CLASS_NAME, "el-input-group__append").click()
 
-
-@timeout()
-def remove_code(find_by=((By.CLASS_NAME, 'el-icon-delete'))):
+timeout()
+def remove_code():
     """ *** code removes itself after activation try.
     Removes previously sent discount code, making room to try another.
     Clicks on remove button.
     """
-    driver.find_element(find_by).click()
+    driver.find_element(By.XPATH, '//*[@id="app"]/form/div[3]/div[2]/div/div/button/i').click()
+    # el.click()
 
 
 def empty_chart() -> bool:
@@ -196,7 +196,12 @@ def try_code(code):
     activate_code()
 
 
+def is_valid():
+    # if 
+    pass
+
 # zmienic rabat % str na int zeby uzytkownik mogl wybrac od jakiego progu rabaty chcce zapisywac?
+# sprawdzic czy szybciej poszukac w page.source % rabatu czy przekalkulowac
 def try_codes(discount=15, print_info=True, save_to_file=False):
     codes = read_codes(settings.CODES_PATH_ALL)
     coupon15 = []
@@ -208,12 +213,13 @@ def try_codes(discount=15, print_info=True, save_to_file=False):
             if print_info:
                 print(f'Znaleziono kod o wartości 15%! {code}')
             coupon15.append(code)
+            remove_code()
         elif 'Rabat 20%' in driver.page_source:
             if print_info:
                 print(f'Znaleziono kod o wartości 20%! {code}')
             coupon20.append(code)
+            remove_code()
     if coupon15:
-
         print(f'Znaleziono {len(coupon15)} kuponów o wartości 15%.')
         print(coupon15)
     if coupon20:
@@ -234,10 +240,9 @@ if empty_chart():
     add_to_chart()
     close_modal()
 go_to_chart()
-# enter_code("435dfg")
-# activate_code()
-# remove_code()
-try_codes()
-
+enter_code("78ed2233cb")
+activate_code()
+remove_code()
 # try_codes()
 
+# try_codes()
