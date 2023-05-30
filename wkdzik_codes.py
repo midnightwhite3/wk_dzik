@@ -14,10 +14,8 @@ import sys
 
 import settings
 
-
-# TODO: implement webdriver wait to all funcs (generic implementation), with timeout included
-# TODO: if the price ios too low, chart layout is different /
-# check for the price in the chart to be high enough, add more items/more valuable item
+# salesmanagoPopupContainer - id for 30s idle pop out
+# TODO: write an exception for the pop up
 
 # set up the driver
 options = Options()
@@ -106,13 +104,13 @@ def activate_code():
     """Activates sent discount code. Clicks on activate button."""
     driver.find_element(By.CLASS_NAME, "el-input-group__append").click()
 
-timeout()
+
 def remove_code():
-    """ *** code removes itself after activation try.
-    Removes previously sent discount code, making room to try another.
-    Clicks on remove button.
+    """If code works, it needs to be removed to show input for another one.
+    Finds remove code button and clicks on it.
     """
-    driver.find_element(By.XPATH, '//*[@id="app"]/form/div[3]/div[2]/div/div/button/i').click()
+    wait.until(EC.element_to_be_clickable((By.CLASS_NAME, 'removepromocode')))
+    driver.find_element(By.CLASS_NAME, 'removepromocode').click()
     # el.click()
 
 
@@ -171,6 +169,8 @@ def is_code_input() -> bool:
 
 @timeout()
 def code_input(code: str):
+    if not is_code_input():
+        remove_code()
     element = driver.find_element(By.NAME, "Wpisz kod rabatowy")
     element.send_keys(code)
 
@@ -240,9 +240,9 @@ if empty_chart():
     add_to_chart()
     close_modal()
 go_to_chart()
-enter_code("78ed2233cb")
-activate_code()
-remove_code()
-# try_codes()
+# enter_code("78ed2233cb")
+# activate_code()
+# remove_code()
+try_codes()
 
 # try_codes()
