@@ -6,7 +6,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.service import Service
 from webdriver_manager.firefox import GeckoDriverManager
 from selenium.webdriver.firefox.options import Options
-import selenium.common.exceptions as exc
+import selenium.common.exceptions as selenium_exc
 
 from pyautogui import press
 from time import sleep
@@ -41,9 +41,9 @@ def timeout(s=settings.TIMEOUT_s, n=settings.TIMEOUT_n):
                 if i == n: sys.exit("Timeout. Exiting.")
                 try:
                     func(*args, **kwargs)
-                except Exception as error:
+                except Exception as err:
                     sleep(s)
-                    print(error)
+                    print(err)
                     continue
                 else:
                     break
@@ -94,9 +94,22 @@ def read_codes(codes_path=settings.CODES_PATH_ALL) -> list:
 def enter_code(code):
     """Looks for discount code field and puts the code in."""
     # wait.until(EC.presence_of_element_located((By.NAME, "Wpisz kod rabatowy")))
-    input = driver.find_element(By.NAME, "Wpisz kod rabatowy")
-    driver.find_element(By.CLASS_NAME, 'el-input-group__append').click() # neccesary to be able to send keys
-    input.send_keys(code)
+    try:
+        wait.until(EC.presence_of_element_located((By.NAME, 'Wpisz kod rabatowy')))
+        input = driver.find_element(By.NAME, "Wpisz kod rabatowy")
+        driver.find_element(By.CLASS_NAME, 'el-input-group__append').click() # neccesary to be able to send keys
+        input.send_keys(code)
+    except selenium_exc.NoSuchElementException:
+        remove_code()
+        enter_code()
+
+
+def placeholder_active():
+    try:
+        driver.find_element(By.CLASS_NAME, 'placeholder active')
+    except selenium_exc.NoSuchElementException:
+        return False
+    return True
 
 
 @timeout()
@@ -106,11 +119,12 @@ def activate_code():
 
 
 def remove_code():
-    """If code works, it needs to be removed to show input for another one.
+    """If promo code works, it needs to be removed to show input for another one.
     Finds remove code button and clicks on it.
     """
+    wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'basket-grid')))
     wait.until(EC.element_to_be_clickable((By.CLASS_NAME, 'removepromocode')))
-    driver.find_element(By.CLASS_NAME, 'removepromocode').click()
+    driver.find_element(By.XPATH, '//*[@id="app"]/form/div[3]/div[2]/div/div/button/span').click()
     # el.click()
 
 
@@ -151,7 +165,7 @@ def add_to_chart():
     """Adds item to chart."""
     try:
         driver.find_element(By.LINK_TEXT, 'Do koszyka').click()
-    except exc.NoSuchElementException:
+    except selenium_exc.NoSuchElementException:
         driver.find_element(By.CLASS_NAME, 'addtobasket').click()
 
 
@@ -192,8 +206,16 @@ def show_code_input():
 
 
 def try_code(code):
-    enter_code(code)
-    activate_code()
+    try:
+        if placeholder_active():
+            activate_code()
+            return
+        enter_code(code)
+        activate_code()
+    except:
+        remove_code()
+        enter_code()
+        activate_code()
 
 
 def is_valid():
@@ -206,12 +228,13 @@ def try_codes(discount=15, print_info=True, save_to_file=False):
     codes = read_codes(settings.CODES_PATH_ALL)
     coupon15 = []
     coupon20 = []
-    for code in codes:
+    for index, code in enumerate(codes):
+        print(f"Sprawdzam kod nr {index}")
         try_code(code)
         # if f'Rabat {str(discount)}%' in driver.page_source:
         if 'Rabat 15%' in driver.page_source:
             if print_info:
-                print(f'Znaleziono kod o wartości 15%! {code}')
+                print(f'Znaleziono kod o wartości 15%! {code}.')
             coupon15.append(code)
             remove_code()
         elif 'Rabat 20%' in driver.page_source:
